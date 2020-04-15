@@ -1,4 +1,4 @@
-package com.spring.demoblog.service;
+package com.spring.demoblog.security;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.spring.demoblog.entity.User;
@@ -11,19 +11,23 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-public class UserPrinciple implements UserDetails {
-    private static final long serialVersionUID = 1L;
+public class UserPrincipal implements UserDetails {
 
     private Long id;
+
     private String name;
+
     private String username;
+
+    @JsonIgnore
     private String email;
+
     @JsonIgnore
     private String password;
 
     private Collection<? extends GrantedAuthority> authorities;
 
-    public UserPrinciple(Long id, String name, String username, String email, String password, Collection<? extends GrantedAuthority> authorities) {
+    public UserPrincipal(Long id, String name, String username, String email, String password, Collection<? extends GrantedAuthority> authorities) {
         this.id = id;
         this.name = name;
         this.username = username;
@@ -32,12 +36,12 @@ public class UserPrinciple implements UserDetails {
         this.authorities = authorities;
     }
 
-    public static UserPrinciple build(User user){
-        List<GrantedAuthority> authorities = user.getRoles().stream().map(role->
-                    new SimpleGrantedAuthority(role.getName().name())
-                ).collect(Collectors.toList());
+    public static UserPrincipal create(User user) {
+        List<GrantedAuthority> authorities = user.getRoles().stream().map(role ->
+                new SimpleGrantedAuthority(role.getName().name())
+        ).collect(Collectors.toList());
 
-        return new UserPrinciple(
+        return new UserPrincipal(
                 user.getId(),
                 user.getName(),
                 user.getUsername(),
@@ -51,16 +55,12 @@ public class UserPrinciple implements UserDetails {
         return id;
     }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
-
     public String getName() {
         return name;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public String getEmail() {
+        return email;
     }
 
     @Override
@@ -68,34 +68,14 @@ public class UserPrinciple implements UserDetails {
         return username;
     }
 
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
     @Override
     public String getPassword() {
         return password;
     }
 
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return authorities;
-    }
-
-    public void setAuthorities(Collection<? extends GrantedAuthority> authorities) {
-        this.authorities = authorities;
     }
 
     @Override
@@ -122,8 +102,13 @@ public class UserPrinciple implements UserDetails {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
+        UserPrincipal that = (UserPrincipal) o;
+        return Objects.equals(id, that.id);
+    }
 
-        UserPrinciple user = (UserPrinciple) o;
-        return Objects.equals(id, user.id);
+    @Override
+    public int hashCode() {
+
+        return Objects.hash(id);
     }
 }

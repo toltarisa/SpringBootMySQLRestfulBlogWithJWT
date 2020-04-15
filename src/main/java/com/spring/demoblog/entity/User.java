@@ -1,13 +1,15 @@
 package com.spring.demoblog.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import com.spring.demoblog.entity.audit.DateAudit;
+import org.hibernate.annotations.NaturalId;
 
 import javax.persistence.Entity;
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Size;
 
-import java.util.ArrayList;
+
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -16,34 +18,33 @@ import javax.persistence.*;
 
 
 @Entity
-@Table(name="users")
-public class User {
+@Table(name="users",uniqueConstraints = {
+		@UniqueConstraint(columnNames = {"username"}),
+		@UniqueConstraint(columnNames = "email")
+})
+public class User extends DateAudit {
 
 	@Id
 	@GeneratedValue(strategy=GenerationType.AUTO)
-	@Column(name="user_id")
 	private Long id;
 
+	@NotBlank
 	@Size(min=5,max=255)
-	@NotBlank(message="You need to enter your username")
-	@Column(name="username",nullable=false,unique = true)
 	private String username;
 
+	@NotBlank
 	@Size(min=5,max=50)
-	@NotBlank(message="You need to enter your name")
-	@Column(name="name",nullable=false)
 	private String name;
 
-	@Size(min=13,max=255)
-	@Email(message="Please provide valid email")
-	@NotBlank(message="You need to specify an email address")
-	@Column(name="email",nullable=false,unique=true)
+	@NaturalId
+	@Size(max = 40)
+	@NotBlank
+	@Email
 	private String email;
 
 
-	@Size(min=6,max=120)
-	@NotBlank(message="You need the enter valid password(min 6 character,max 120 character)")
-	@Column(name="password",nullable=false)
+	@NotBlank
+	@Size(max = 100)
 	private String password;
 
 	@ManyToMany(fetch = FetchType.LAZY)
@@ -56,16 +57,18 @@ public class User {
 	
 	@OneToMany(mappedBy="user", cascade= {CascadeType.ALL})
 	private List<Comment> comment;
-	
+
 	public User() {
-		
 	}
 
-    public User(String name, String username, String email, String encode) {
-    }
+	public User(String name, String username, String email, String password) {
+		this.name = name;
+		this.username = username;
+		this.email = email;
+		this.password = password;
+	}
 
-
-    public Long getId() {
+	public Long getId() {
 		return id;
 	}
 

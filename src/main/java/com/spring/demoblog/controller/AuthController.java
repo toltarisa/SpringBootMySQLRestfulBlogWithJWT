@@ -1,13 +1,16 @@
 package com.spring.demoblog.controller;
+
 import com.spring.demoblog.entity.Role;
 import com.spring.demoblog.entity.RoleName;
 import com.spring.demoblog.entity.User;
-import com.spring.demoblog.message.JwtResponse;
-import com.spring.demoblog.message.LoginForm;
-import com.spring.demoblog.message.SignupForm;
+import com.spring.demoblog.exception.AppException;
+import com.spring.demoblog.payload.ApiResponse;
+import com.spring.demoblog.payload.JwtAuthenticationResponse;
+import com.spring.demoblog.payload.LoginRequest;
+import com.spring.demoblog.payload.SignUpRequest;
 import com.spring.demoblog.repository.RoleRepository;
 import com.spring.demoblog.repository.UserRepository;
-import com.spring.demoblog.security.JwtProvider;
+import com.spring.demoblog.security.JwtTokenProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,21 +19,22 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import javax.validation.Valid;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Set;
+import java.net.URI;
+import java.util.Collections;
 
-@CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
 
     @Autowired
     AuthenticationManager authenticationManager;
-
 
     @Autowired
     UserRepository userRepository;
@@ -42,72 +46,46 @@ public class AuthController {
     PasswordEncoder passwordEncoder;
 
     @Autowired
-    JwtProvider jwtProvider;
-
+    JwtTokenProvider tokenProvider;
 
     @PostMapping("/signin")
-    public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginForm loginRequest) {
-
-        Authentication authentication = authenticationManager.authenticate(
+    public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
+        Authentication authentication =  authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
-                        loginRequest.getUsername(),
+                        loginRequest.getUsernameOrEmail(),
                         loginRequest.getPassword()
                 )
         );
-
         SecurityContextHolder.getContext().setAuthentication(authentication);
-
-        String jwt = jwtProvider.generateJwtToken(authentication);
-        return ResponseEntity.ok(new JwtResponse(jwt));
+        String jwt = tokenProvider.generateToken(authentication);
+        return ResponseEntity.ok(new JwtAuthenticationResponse(jwt));
     }
 
-
     @PostMapping("/signup")
-    public ResponseEntity<String> registerUser(@Valid @RequestBody SignupForm signUpRequest) {
+    public ResponseEntity<?> registerUser(@Valid @RequestBody SignUpRequest signUpRequest){
         if(userRepository.existsByUsername(signUpRequest.getUsername())) {
-            return new ResponseEntity<String>("Fail -> Username is already taken!",
-                    HttpStatus.BAD_REQUEST);
+            return new ResponseEntity(new ApiResponse(false,"Username already taken"), HttpStatus.BAD_REQUEST);
         }
 
         if(userRepository.existsByEmail(signUpRequest.getEmail())) {
-            return new ResponseEntity<String>("Fail -> Email is already in use!",
-                    HttpStatus.BAD_REQUEST);
+            return new ResponseEntity(new ApiResponse(false,"Email is already taken"),HttpStatus.BAD_REQUEST);
         }
 
+        User user = new User(signUpRequest.getName(),signUpRequest.getUsername(),signUpRequest.getEmail(),signUpRequest.getPassword());
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
 
-        User user = new User(signUpRequest.getName(), signUpRequest.getUsername(),
-                signUpRequest.getEmail(), passwordEncoder.encode(signUpRequest.getPassword()));
 
-        Set<String> strRoles = signUpRequest.getRole();
-        Set<Role> roles = new HashSet<>();
+        Role userRole = roleRepository.findByName(RoleName.ROLE_USER)
+                .orElseThrow(()->new AppException("User Role not set"));
+        user.setRoles(Collections.singleton(userRole));
 
-        strRoles.forEach(role -> {
-            switch(role) {
-                case "admin":
-                    Role adminRole = roleRepository.findByName(RoleName.ROLE_ADMIN)
-                            .orElseThrow(() -> new RuntimeException("Fail! -> Cause: User Role not find."));
-                    roles.add(adminRole);
+        User result = userRepository.save(user);
 
-                    break;
-                case "pm":
-                    Role pmRole = roleRepository.findByName(RoleName.ROLE_PM)
-                            .orElseThrow(() -> new RuntimeException("Fail! -> Cause: User Role not find."));
-                    roles.add(pmRole);
+        URI location = ServletUriComponentsBuilder
+                .fromCurrentContextPath().path("/api/users/{username}")
+                .buildAndExpand(result.getUsername()).toUri();
 
-                    break;
-                default:
-                    Role userRole = roleRepository.findByName(RoleName.ROLE_USER)
-                            .orElseThrow(() -> new RuntimeException("Fail! -> Cause: User Role not find."));
-                    roles.add(userRole);
-            }
-        });
-
-        user.setRoles(roles);
-        userRepository.save(user);
-
-        return ResponseEntity.ok().body("User registered successfully!");
+        return ResponseEntity.created(location).body(new ApiResponse(true,"User registered successfully"));
 
     }
 }
-    
-

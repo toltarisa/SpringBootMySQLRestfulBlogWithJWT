@@ -1,29 +1,26 @@
-package com.spring.demoblog.message;
+package com.spring.demoblog.payload;
 
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Size;
-import java.util.Set;
 
-public class SignupForm {
+public class SignUpRequest {
 
     @NotBlank
-    @Size(min = 3, max = 50)
+    @Size(min = 4,max = 30)
     private String name;
 
     @NotBlank
-    @Size(min = 3, max = 50)
+    @Size(min = 3,max = 25)
     private String username;
 
     @NotBlank
-    @Size(max = 60)
+    @Size(max = 40)
     @Email
     private String email;
 
-    private Set<String> role;
-
     @NotBlank
-    @Size(min = 6, max = 40)
+    @Size(min = 6,max = 20)
     private String password;
 
     public String getName() {
@@ -56,13 +53,5 @@ public class SignupForm {
 
     public void setPassword(String password) {
         this.password = password;
-    }
-
-    public Set<String> getRole() {
-        return this.role;
-    }
-
-    public void setRole(Set<String> role) {
-        this.role = role;
     }
 }
