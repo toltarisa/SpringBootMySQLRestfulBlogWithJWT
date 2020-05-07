@@ -4,6 +4,7 @@ import javax.persistence.Entity;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Size;
 
+import com.spring.demoblog.entity.audit.AuditModel;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.util.Date;
@@ -13,10 +14,10 @@ import javax.persistence.*;
 
 @Entity
 @Table(name="post")
-public class Post {
+public class Post extends AuditModel {
 	
 	@Id
-	@GeneratedValue(strategy=GenerationType.AUTO)
+	@GeneratedValue(strategy=GenerationType.IDENTITY)
 	@Column(name="post_id")
 	private Long id;
 	
@@ -30,26 +31,11 @@ public class Post {
 	@Column(name="content")
 	private String content;
 	
-	@Temporal(TemporalType.TIMESTAMP)
-	@Column(name="created_at",nullable=false,updatable=false)
-	@CreationTimestamp
-	private Date createdAt;
+
 	
 	@ManyToOne(cascade=CascadeType.ALL)
 	@JoinColumn(name="user_id")
 	private User user;
-	
-	@OneToMany(mappedBy="post", cascade= {CascadeType.ALL})
-	private List<Comment> comment;
-	
-	public Date getCreatedAt() {
-		return createdAt;
-	}
-
-
-	public void setCreatedAt(Date createdAt) {
-		this.createdAt = createdAt;
-	}
 
 
 	public Post() {
@@ -96,18 +82,5 @@ public class Post {
 	}
 
 
-	public List<Comment> getComment() {
-		return comment;
-	}
 
-
-	public void setComment(List<Comment> comment) {
-		this.comment = comment;
-	}
-	
-	
-	
-
-	
-	
 }

@@ -5,7 +5,13 @@ import javax.persistence.*;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Size;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 
 @Entity
@@ -21,20 +27,24 @@ public class Comment {
 	@Size(min=50, max=200)
 	@Column(name="comment",nullable=false)
 	private String comment;
-	
+
 	@Temporal(TemporalType.TIMESTAMP)
 	@Column(name="created_at",nullable=false,updatable=false)
 	@CreationTimestamp
 	private Date createdAt;
-	
-	@ManyToOne(cascade=CascadeType.ALL)
-	@JoinColumn(name="post_id")
+
+	@ManyToOne(fetch = FetchType.LAZY,optional = false)
+	@JoinColumn(name="post_id",nullable = false)
+	@OnDelete(action = OnDeleteAction.CASCADE)
+	@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class,property = "id")
+	@JsonProperty("post_id")
+	@JsonIgnore
 	private Post post;
 	
 	@ManyToOne(cascade=CascadeType.ALL)
 	@JoinColumn(name="user_id")
 	private User user;
-	
+
 	public Date getCreatedAt() {
 		return createdAt;
 	}
